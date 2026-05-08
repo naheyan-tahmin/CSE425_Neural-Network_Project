@@ -8,7 +8,7 @@ This repository implements and compares multiple symbolic music generation metho
 - Baselines: Random Generator and Markov Chain
 
 ---
-
+## 0) Dataset Link: https://storage.googleapis.com/magentadata/datasets/maestro/v3.0.0/maestro-v3.0.0-midi.zip
 ## 1) Setup
 
 ```bash
