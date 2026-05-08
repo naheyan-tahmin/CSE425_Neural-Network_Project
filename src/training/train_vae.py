@@ -19,6 +19,7 @@ from src.training.common import (
 
 
 def train(args: argparse.Namespace) -> None:
+    # VAE uses beta to balance reconstruction fidelity and latent regularization.
     cfg = TrainConfig(epochs=args.epochs, batch_size=args.batch_size, lr=args.lr, beta=args.beta)
     set_seed(cfg.seed)
     ensure_dirs()
@@ -50,6 +51,7 @@ def train(args: argparse.Namespace) -> None:
         total_train_kl = 0.0
         for (x,) in tqdm(train_loader, desc="VAE training", leave=False):
             x = x.to(device)
+            # Decoder receives SOS-shifted tokens for teacher forcing.
             dec_in_np = np.stack([add_sos(sample.cpu().numpy()) for sample in x], axis=0)
             dec_in = torch.from_numpy(dec_in_np).to(device=device, dtype=torch.long)
             logits, mu, logvar = model(x, dec_in)
@@ -59,6 +61,7 @@ def train(args: argparse.Namespace) -> None:
                 ignore_index=PAD_TOKEN,
             )
             kl = kl_divergence(mu, logvar)
+            # Standard beta-VAE objective.
             loss = recon + cfg.beta * kl
             optimizer.zero_grad()
             loss.backward()

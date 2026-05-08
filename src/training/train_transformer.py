@@ -19,6 +19,7 @@ from src.training.common import (
 
 
 def train(args: argparse.Namespace) -> None:
+    # Train an autoregressive next-token model with genre-conditioning.
     cfg = TrainConfig(epochs=args.epochs, batch_size=args.batch_size, lr=args.lr)
     set_seed(cfg.seed)
     ensure_dirs()
@@ -39,6 +40,7 @@ def train(args: argparse.Namespace) -> None:
         for x, g in tqdm(train_loader, desc="Transformer training", leave=False):
             x = x.to(device)
             g = g.to(device)
+            # Shifted inputs/targets for next-token prediction.
             inp = x[:, :-1]
             tgt = x[:, 1:]
             logits = model(inp, genre_ids=g, padding_mask=(inp == PAD_TOKEN))
@@ -62,6 +64,7 @@ def train(args: argparse.Namespace) -> None:
                 total_val += loss.item()
         val_losses.append(total_val / max(1, len(val_loader)))
 
+    # Convert final validation NLL to perplexity for reporting.
     perplexity = math.exp(val_losses[-1]) if val_losses[-1] < 20 else float("inf")
     save_train_val_loss_plot(train_losses, val_losses, "task3_transformer_nll")
     torch.save(model.state_dict(), OUTPUT_DIR / "transformer_model.pt")

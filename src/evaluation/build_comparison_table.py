@@ -7,6 +7,7 @@ from src.config import OUTPUT_DIR, PLOT_DIR, SURVEY_DIR, ensure_dirs
 
 
 def load_json(path: Path) -> dict:
+    # Return empty dict if metric file is missing to keep table builder robust.
     if not path.exists():
         return {}
     with open(path, "r", encoding="utf-8") as f:
@@ -14,6 +15,7 @@ def load_json(path: Path) -> dict:
 
 
 def mean_human_score_by_model() -> dict[str, float]:
+    # Aggregate optional human survey ratings into a model->mean score mapping.
     survey_file = SURVEY_DIR / "human_survey_results.csv"
     if not survey_file.exists():
         return {}
@@ -29,6 +31,7 @@ def mean_human_score_by_model() -> dict[str, float]:
 
 
 def build_table() -> None:
+    # Assemble one final CSV by merging automatic metrics, task metrics, and human ratings.
     ensure_dirs()
     rows = [
         {"model": "Random Generator"},

@@ -34,6 +34,7 @@ def _decode_from_random_latent(
     temperature: float = 1.0,
     top_k: int = 32,
 ) -> np.ndarray:
+    # Sample random latent vectors and decode them into token sequences.
     z = torch.randn(num_samples, cfg.latent_dim, device=device)
     if not autoregressive:
         dec_in = torch.full((num_samples, cfg.seq_len), SOS_TOKEN, dtype=torch.long, device=device)
@@ -41,6 +42,7 @@ def _decode_from_random_latent(
             logits = model.decode(z, dec_in)
         return torch.argmax(logits, dim=-1).cpu().numpy()
 
+    # Optional autoregressive latent decoding with top-k sampling.
     cur = torch.full((num_samples, 1), SOS_TOKEN, dtype=torch.long, device=device)
     banned_tokens = torch.tensor([PAD_TOKEN, SOS_TOKEN], dtype=torch.long, device=device)
     out_tokens: list[torch.Tensor] = []
@@ -65,6 +67,7 @@ def _write_samples(
     tokens: np.ndarray,
     out_prefix: str,
 ) -> tuple[list[np.ndarray], list[str]]:
+    # Export generated token sequences into MIDI files and return both arrays and paths.
     generated, paths = [], []
     for i in range(tokens.shape[0]):
         seq = tokens[i].astype(np.int64)
@@ -201,6 +204,7 @@ def markov_baseline(seq_len: int, num_samples: int) -> list[np.ndarray]:
 
 
 def _reference_event_sequence(seq_len: int) -> np.ndarray:
+    # Use the first available dataset sample as a lightweight reference for automatic metrics.
     files = collect_midi_files(None)
     if not files:
         raise ValueError(
@@ -214,6 +218,7 @@ def _reference_event_sequence(seq_len: int) -> np.ndarray:
 
 
 def evaluate_and_save(name: str, generated: list[np.ndarray], midi_paths: list[str]) -> None:
+    # Compute per-sample metrics and store model-level average JSON.
     reference = _reference_event_sequence(len(generated[0]))
     metrics = []
     for seq, midi_path in zip(generated, midi_paths):

@@ -18,6 +18,7 @@ from src.training.common import (
 
 
 def train(args: argparse.Namespace) -> None:
+    # Build runtime config from CLI arguments and initialize deterministic behavior.
     cfg = TrainConfig(epochs=args.epochs, batch_size=args.batch_size, lr=args.lr)
     set_seed(cfg.seed)
     ensure_dirs()
@@ -25,7 +26,8 @@ def train(args: argparse.Namespace) -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     data = load_sequences(cfg, genre=args.genre)
     save_processed(data, f"ae_{args.genre or 'all'}")
-    train_loader, val_loader = build_dataloaders(data, cfg) #train_loader is the data loader for the training set, val_loader is the data loader for the validation set
+    # Split token windows into train/validation loaders.
+    train_loader, val_loader = build_dataloaders(data, cfg)
 
     model = LSTMAutoencoder(
         vocab_size=cfg.vocab_size,
@@ -40,14 +42,16 @@ def train(args: argparse.Namespace) -> None:
     val_losses = []
     token_values = torch.arange(cfg.vocab_size, dtype=torch.float32, device=device).view(1, 1, -1)
     for _ in range(cfg.epochs):
-        model.train() #set the model to training mode
+        model.train()
         total_train = 0.0
-        for (x,) in tqdm(train_loader, desc="AE training", leave=False): #x is the input sequence
+        for (x,) in tqdm(train_loader, desc="AE training", leave=False):
             x = x.to(device)
+            # Teacher-forcing input is the same sequence shifted with SOS token.
             dec_in_np = np.stack([add_sos(sample.cpu().numpy()) for sample in x], axis=0)
             dec_in = torch.from_numpy(dec_in_np).to(device=device, dtype=torch.long)
-            logits = model(x, dec_in) #logits is the output of the model
+            logits = model(x, dec_in)
             probs = torch.softmax(logits, dim=-1)
+            # Convert token distribution to expected token value and optimize masked MSE.
             x_hat = (probs * token_values).sum(dim=-1)
             mask = (x != PAD_TOKEN).float()
             mse = (x_hat - x.float()) ** 2
