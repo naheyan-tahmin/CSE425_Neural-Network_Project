@@ -242,14 +242,19 @@ def main() -> None:
     ensure_dirs()
     cfg = TrainConfig(seq_len=args.seq_len)
 
+    genre_tag = args.genre.lower()
     if args.model == "ae":
-        generated, midi_paths = generate_from_ae(cfg, args.num_samples, "task1_ae")
+        generated, midi_paths = generate_from_ae(cfg, args.num_samples, f"task1_ae_genre-{genre_tag}")
     elif args.model == "vae":
-        generated, midi_paths = generate_from_vae(cfg, args.num_samples, "task2_vae")
+        generated, midi_paths = generate_from_vae(cfg, args.num_samples, f"task2_vae_genre-{genre_tag}")
     elif args.model == "transformer":
-        generated, midi_paths = generate_from_transformer(cfg, args.num_samples, "task3_transformer", args.genre)
+        generated, midi_paths = generate_from_transformer(
+            cfg, args.num_samples, f"task3_transformer_genre-{genre_tag}", args.genre
+        )
     elif args.model == "rlhf":
-        generated, midi_paths = generate_from_rlhf_transformer(cfg, args.num_samples, "task4_rlhf", args.genre)
+        generated, midi_paths = generate_from_rlhf_transformer(
+            cfg, args.num_samples, f"task4_rlhf_genre-{genre_tag}", args.genre
+        )
     elif args.model == "random":
         generated = random_baseline(cfg.seq_len, args.num_samples)
         midi_paths = _export_baseline_midis(generated, "baseline_random")
