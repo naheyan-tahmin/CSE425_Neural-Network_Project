@@ -155,7 +155,7 @@ python -m src.evaluation.rlhf_before_after
 
 ---
 
-## 7) External Links (Add these in README and Report)
+## 7) External Links
 
 - Report PDF Drive link:  
   https://drive.google.com/file/d/15fojQBM1Qt8P19nPDtDpk-6my3DIaQhW/view?usp=sharing
