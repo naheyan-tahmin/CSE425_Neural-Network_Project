@@ -1,0 +1,117 @@
+\documentclass[conference]{IEEEtran}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{url}
+
+\title{Unsupervised Neural Network for Multi-Genre Music Generation}
+\author{\IEEEauthorblockN{Student Group Name}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This project implements the complete four-task roadmap for unsupervised multi-genre symbolic music generation. We use event-token MIDI modeling with note-on, note-off, velocity, and duration tokens, train LSTM Autoencoder, VAE, and Transformer models, and then perform RLHF-style policy optimization. The system is evaluated with pitch histogram similarity, rhythm diversity, repetition ratio, perplexity, baseline comparison, and human listening score.
+\end{abstract}
+
+\section{Introduction}
+Music generation requires modeling temporal dependency, motif recurrence, and rhythmic structure. Following the project specification, we train unsupervised generative models over symbolic MIDI sequences and evaluate quality with both objective metrics and listening feedback.
+
+\section{Dataset and Preprocessing}
+We use publicly available MIDI data from the Lakh MIDI collection variant available to us. Invalid/corrupt files are skipped during parsing. The preprocessing pipeline strictly follows the assignment requirements:
+\begin{enumerate}
+    \item Convert MIDI into token-based symbolic events.
+    \item Normalize timing to 16 steps per bar (4 steps per beat).
+    \item Segment each token stream into fixed-length windows.
+\end{enumerate}
+
+\subsection{Token Vocabulary}
+Each music event sequence includes:
+\begin{itemize}
+    \item note-on token: pitch $0\ldots127$
+    \item note-off token: pitch $0\ldots127$
+    \item velocity token: 32 bins
+    \item duration token: 32 bins
+\end{itemize}
+Special tokens (PAD/SOS) are used for batching and autoregressive decoding.
+
+\section{Method}
+\subsection{Task 1}
+\begin{equation}
+L_{AE}=\sum_{t=1}^{T}\|x_t-\hat{x}_t\|_2^2
+\end{equation}
+Task 1 uses an LSTM encoder to produce latent embedding $z=f_{\phi}(X)$ and an LSTM decoder to reconstruct $\hat{X}=g_{\theta}(z)$.
+
+\subsection{Task 2}
+\begin{equation}
+L_{VAE}=L_{recon}+\beta D_{KL}(q_\phi(z|X)\|p(z))
+\end{equation}
+Task 2 extends Task 1 with reparameterization:
+\begin{equation}
+z=\mu+\sigma\odot\epsilon,\;\epsilon\sim\mathcal{N}(0,I)
+\end{equation}
+and includes latent interpolation experiments.
+
+\subsection{Task 3}
+\begin{equation}
+L_{TR}=-\sum_{t=1}^{T}\log p_\theta(x_t|x_{<t})
+\end{equation}
+Transformer hidden representation uses genre conditioning:
+\begin{equation}
+h_t=\text{Emb}(x_t)+\text{Emb}(genre)
+\end{equation}
+Perplexity is reported as:
+\begin{equation}
+\text{Perplexity}=\exp\left(\frac{1}{T}L_{TR}\right)
+\end{equation}
+
+\subsection{Task 4}
+RLHF-style policy update optimizes:
+\begin{equation}
+J(\theta)=\mathbb{E}[r(X_{gen})],\quad \nabla_\theta J(\theta)=\mathbb{E}[r\nabla_\theta \log p_\theta(X)]
+\end{equation}
+where $r(\cdot)$ is a reward scoring function and human listening scores are collected in survey files.
+
+\section{Experiments}
+\subsection{Training Setup}
+All tasks use train/test split, fixed sequence windows, Adam optimizer, and reproducible random seeds.
+
+\subsection{Baselines}
+We compare against:
+\begin{itemize}
+    \item Random Note Generator
+    \item Markov Chain Music Model
+\end{itemize}
+
+\subsection{Outputs}
+Generated outputs, plots, metrics JSON, and CSV tables are produced under \texttt{outputs/}.
+
+\section{Results}
+\subsection{Evaluation Metrics}
+\begin{equation}
+H(p,q)=\sum_{i=1}^{12}|p_i-q_i|
+\end{equation}
+\begin{equation}
+D_{rhythm}=\frac{\#\text{unique durations}}{\#\text{total notes}}
+\end{equation}
+\begin{equation}
+R=\frac{\#\text{repeated patterns}}{\#\text{total patterns}}
+\end{equation}
+\begin{equation}
+Score_{human}\in [1,5]
+\end{equation}
+
+\subsection{Quantitative Tables}
+The generated comparison tables are exported by code:
+\begin{itemize}
+    \item \texttt{outputs/plots/comparison\_table.csv}
+    \item \texttt{outputs/plots/task4\_before\_after.csv}
+\end{itemize}
+These files contain baseline/task-level metric comparison, perplexity, and RLHF before-vs-after analysis.
+
+\section{Conclusion}
+The complete pipeline satisfies the project roadmap from Task 1 to Task 4. Transformer models improve long-horizon coherence over AE/VAE baselines, and RLHF-style tuning improves preference-oriented generation quality. Future work includes larger-scale human feedback and stronger reward modeling.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+\end{document}

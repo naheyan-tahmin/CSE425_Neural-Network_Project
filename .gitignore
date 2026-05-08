@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+
+# Local virtual environments
+.venv/
+venv/
+
+# Dataset and generated artifacts
+data/
+outputs/
